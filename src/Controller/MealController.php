@@ -25,29 +25,30 @@ class MealController extends AbstractController
     #[Route('/meals', name: 'meals_get', methods: ['get'])]
     public function index(Request $request): JsonResponse
     {
-
         $errors = $this->paramsValidator->validateParameters($request);
         if (count($errors) > 0) {
             return new JsonResponse(['errors' => $errors], 400);
         }
 
-        $perPage = $request->query->get('per_page', 10);
-        $page = $request->query->get('page', 1);
+        $perPage = $request->query->getInt('per_page', 10);
+        $page = $request->query->getInt('page', 1);
         $category = $request->query->get('category');
         $tags = $request->query->get('tags');
         $with = $request->query->get('with');
         $lang = $this->mealHelper->getLanguageId($request->query->get('lang'));
-        $diffTime = $request->query->get('diff_time');
+        $diffTime = $request->query->getInt('diff_time', 0);
 
         $repository = $this->getDoctrine()->getRepository(Meal::class);
         $queryBuilder = $repository->createQueryBuilder('m')
             ->select('DISTINCT m.id, m.title, m.description, m.status')
             ->leftJoin('m.category', 'c')
-            ->leftJoin('m.tags', 't2')
+            ->leftJoin('m.tags', 't')
             ->leftJoin('m.ingredients', 'i');
 
         if ($diffTime > 0) {
-            $queryBuilder->andWhere('m.created_at >= :diffTime OR m.updated_at >= :diffTime OR m.deleted_at >= :diffTime')
+            $queryBuilder->orWhere('m.created_at >= :diffTime')
+                ->orWhere('m.updated_at >= :diffTime')
+                ->orWhere('m.deleted_at >= :diffTime')
                 ->setParameter('diffTime', $diffTime);
         }
 
@@ -58,44 +59,21 @@ class MealController extends AbstractController
 
         if ($tags) {
             $tagIds = explode(',', $tags);
-            $queryBuilder->andWhere('t2.id IN (:tagIds)')
-                ->setParameter('tagIds', $tagIds)
-                ->groupBy('m.id')
-                ->having('COUNT(DISTINCT t2.id) = :tagCount')
-                ->setParameter('tagCount', count($tagIds));
+            $queryBuilder->andWhere(':tagIds MEMBER OF m.tags')
+                ->setParameter('tagIds', $tagIds);
         }
 
         $queryBuilder->setMaxResults($perPage)
             ->setFirstResult(($page - 1) * $perPage);
 
         $results = $queryBuilder->getQuery()->getArrayResult();
-
-        $translatedResults = [];
-        foreach ($results as $result) {
-            $translatedResult = $result;
-            $translatedResult['title'] = $this->mealHelper->translate($result['title'], $lang);
-            $translatedResult['description'] = $this->mealHelper->translate($result['description'], $lang);
-            $translatedResults[] = $translatedResult;
-        }
+        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
 
         $totalItems = $this->mealHelper->countTotalItems($queryBuilder);
         $totalPages = ceil($totalItems / $perPage);
 
-        $response = [
-            'meta' => [
-                'currentPage' => $page,
-                'totalItems' => $totalItems,
-                'itemsPerPage' => $perPage,
-                'totalPages' => $totalPages,
-            ],
-            'data' => $translatedResults,
-            'links' => [
-                'prev' => ($page > 1) ? $this->mealHelper->generateUrl($request, $page - 1) : null,
-                'next' => ($page < $totalPages) ? $this->mealHelper->generateUrl($request, $page + 1) : null,
-                'self' => $this->mealHelper->generateUrl($request, $page),
-            ],
-        ];
-
+        $response = $this->mealHelper->buildResponse($page, $totalItems, $perPage, $totalPages, $translatedResults, $request);
+        
         return new JsonResponse($response);
     }
 }

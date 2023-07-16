@@ -65,6 +65,7 @@ class Meal
      */
     private $tags;
 
+
     /**
      * @ORM\ManyToMany(targetEntity="Ingredient")
      * @ORM\JoinTable(
@@ -75,14 +76,20 @@ class Meal
      */
     private $ingredients;
 
+    /**
+     * @ORM\OneToMany(targetEntity="MealHasIngredient", mappedBy="meal")
+     */
+    private $mealHasIngredients;
+
 
     public function __construct()
     {
         $this->tags = new ArrayCollection();
         $this->ingredients = new ArrayCollection();
+        $this->mealHasIngredients = new ArrayCollection();
 
     }
-    
+
     public function getId(): ?int
     {
         return $this->id;
@@ -185,6 +192,27 @@ class Meal
         if (!$this->ingredients->contains($ingredient)) {
             $this->ingredients[] = $ingredient;
         }
+    }
+    /**
+     * @return Collection|MealHasIngredient[]
+     */
+    public function getMealHasIngredients(): Collection
+    {
+        return $this->mealHasIngredients;
+    }
+
+    public function addMealHasIngredient(MealHasIngredient $mealHasIngredient): void
+    {
+        if (!$this->mealHasIngredients->contains($mealHasIngredient)) {
+            $this->mealHasIngredients[] = $mealHasIngredient;
+            $mealHasIngredient->setMeal($this);
+        }
+    }
+
+    public function removeMealHasIngredient(MealHasIngredient $mealHasIngredient): void
+    {
+        $this->mealHasIngredients->removeElement($mealHasIngredient);
+        $mealHasIngredient->setMeal(null);
     }
 
     public function removeIngredient(Ingredient $ingredient): void

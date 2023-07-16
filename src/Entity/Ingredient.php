@@ -2,6 +2,9 @@
 
 namespace App\Entity;
 
+
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -27,7 +30,35 @@ class Ingredient
      */
     private $slug;
 
-    
+    /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\Meal", mappedBy="tags")
+     */
+    private $meals;
+
+    public function __construct()
+    {
+        $this->meals = new ArrayCollection();
+    }
+
+    public function getMeals(): Collection
+    {
+        return $this->meals;
+    }
+
+    public function addMeal(Meal $meal): void
+    {
+        if (!$this->meals->contains($meal)) {
+            $this->meals[] = $meal;
+            $meal->addTag($this);
+        }
+    }
+
+    public function removeMeal(Meal $meal): void
+    {
+        $this->meals->removeElement($meal);
+        $meal->removeTag($this);
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -52,4 +83,5 @@ class Ingredient
     {
         $this->slug = $slug;
     }
+
 }

@@ -14,6 +14,16 @@ class TagRepository extends ServiceEntityRepository
         parent::__construct($registry, Tag::class);
     }
 
+    public function findTagsByMealId(int $mealId): array
+    {
+        return $this->createQueryBuilder('t')
+            ->innerJoin('t.meals', 'm')
+            ->andWhere('m.id = :mealId')
+            ->setParameter('mealId', $mealId)
+            ->getQuery()
+            ->getResult();
+    }
+
     // /**
     //  * @return Book[] Returns an array of Book objects
     //  */
