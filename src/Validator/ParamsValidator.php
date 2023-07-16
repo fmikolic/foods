@@ -40,8 +40,6 @@ class ParamsValidator
                 new Assert\Positive(),
             ]),
             'category' => new Assert\Optional([
-                new Assert\Type(['type' => 'numeric']),
-                new Assert\Positive(),
             ]),
             'tags' => new Assert\Optional([
                 new Assert\Type(['type' => 'string']),

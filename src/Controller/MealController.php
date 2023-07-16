@@ -52,9 +52,16 @@ class MealController extends AbstractController
                 ->setParameter('diffTime', $diffTime);
         }
 
-        if ($category) {
-            $queryBuilder->andWhere('c.id = :category')
-                ->setParameter('category', $category);
+        if ($category !== null) {
+            if ($category === 'NULL') {
+                $queryBuilder->andWhere('m.category IS NULL');
+            } else if ($category === '!NULL'){
+                $queryBuilder->andWhere('m.category IS NOT NULL');
+            }
+            else {
+                $queryBuilder->andWhere('c.id = :category')
+                    ->setParameter('category', $category);
+            }
         }
 
         if ($tags) {

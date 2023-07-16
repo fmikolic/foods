@@ -43,10 +43,10 @@ class MealFixtures extends Fixture implements DependentFixtureInterface
             $manager->persist($meal);
 
             // Generate random number of tags (1-3)
-            $numTags = mt_rand(1, 3);
+            $numTags = rand(1, 3);
             for ($j = 1; $j <= $numTags; $j++) {
                 /** @var Tag $tag */
-                $tag = $this->getReference("tag_" . mt_rand(1, 10));
+                $tag = $this->getReference('tag_' . (string) rand(1, 25));
                 $mealHasTag = new MealHasTag();
                 $mealHasTag->setMeal($meal);
                 $mealHasTag->setTag($tag);
@@ -54,10 +54,10 @@ class MealFixtures extends Fixture implements DependentFixtureInterface
             }
 
             // Generate random number of ingredients (1-3)
-            $numIngredients = mt_rand(1, 3);
+            $numIngredients = rand(1, 3);
             for ($k = 1; $k <= $numIngredients; $k++) {
                 /** @var Ingredient $ingredient */
-                $ingredient = $this->getReference("ingredient_" . mt_rand(1, 10));
+                $ingredient = $this->getReference('ingredient_' . (string) rand(1, 20));
                 $mealHasIngredient = new MealHasIngredient();
                 $mealHasIngredient->setMeal($meal);
                 $mealHasIngredient->setIngredient($ingredient);
