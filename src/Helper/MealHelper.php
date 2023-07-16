@@ -7,8 +7,7 @@ use App\Repository\TranslationRepository;
 use App\Repository\TagRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\IngredientRepository;
-
-
+use App\Repository\MealRepository;
 
 class MealHelper
 {
@@ -17,19 +16,22 @@ class MealHelper
     private $tagRepository;
     private $categoryRepository;
     private $ingredientRepository;
+    private $mealRepository;
 
     public function __construct(
         TranslationRepository $translationRepository,
         LanguageRepository $languageRepository,
         TagRepository $tagRepository,
         CategoryRepository $categoryRepository,
-        IngredientRepository $ingredientRepository
+        IngredientRepository $ingredientRepository,
+        MealRepository $mealRepository
     ) {
         $this->translationRepository = $translationRepository;
         $this->languageRepository = $languageRepository;
         $this->tagRepository = $tagRepository;
         $this->categoryRepository = $categoryRepository;
         $this->ingredientRepository = $ingredientRepository;
+        $this->mealRepository = $mealRepository;
     }
 
     public function countTotalItems($queryBuilder): int
@@ -79,11 +81,13 @@ class MealHelper
         return $translatedTags;
     }
 
-    private function loadCategoryData(?int $categoryId, string $lang): ?array
+    private function loadCategoryData(?int $mealId, string $lang): ?array
     {
+        $meal = $this->mealRepository->find($mealId);
+        $categoryId = $meal ? $meal->getCategory(): null;
         if ($categoryId) {
             $category = $this->categoryRepository->find($categoryId);
-    
+
             if ($category) {
                 return [
                     'id' => $category->getId(),
@@ -92,38 +96,27 @@ class MealHelper
                 ];
             }
         }
-    
+
         return null;
     }
 
-    private function loadIngredientsData(array $mealIds, string $lang): ?array
+    private function loadIngredientsData(int $mealId, string $lang): array
     {
-        $mealIds = array_column($mealIds, 'id');
+        $meal = $this->mealRepository->find($mealId);
+        $ingredients = $meal ? $meal->getIngredients()->toArray() : [];
 
-        $ingredients = $this->ingredientRepository->findIngredientsByMealIds($mealIds);
+        $translatedIngredients = [];
 
-        $result = [];
-
-        foreach ($mealIds as $mealId) {
-            $mealId = $mealId['id'];
-            $mealIngredients = [];
-
-            foreach ($ingredients as $ingredient) {
-                foreach ($ingredient->getMealHasIngredients() as $mealHasIngredient) {
-                    if ($mealHasIngredient->getMeal()->getId() === $mealId) {
-                        $mealIngredients[] = [
-                            'id' => $ingredient->getId(),
-                            'title' => $this->translate($ingredient->getTitle(), $lang),
-                            'slug' => $ingredient->getSlug(),
-                        ];
-                    }
-                }
-            }
-
-            $result[$mealId] = $mealIngredients;
+        foreach ($ingredients as $ingredient) {
+            $translatedIngredient = [
+                'id' => $ingredient->getId(),
+                'title' => $this->translate($ingredient->getTitle(), $lang),
+                'slug' => $ingredient->getSlug(),
+            ];
+            $translatedIngredients[] = $translatedIngredient;
         }
 
-        return $result;
+        return $translatedIngredients;
     }
 
     public function buildResponse(int $page, int $totalItems, int $perPage, int $totalPages, array $translatedResults, $request): array
@@ -160,9 +153,9 @@ class MealHelper
 
                 foreach ($withArray as $item) {
                     if ($item === 'ingredients') {
-                        $translatedResult['ingredients'] = $this->loadIngredientsData([$result['id']], $lang);
+                        $translatedResult['ingredients'] = $this->loadIngredientsData($result['id'], $lang);
                     } elseif ($item === 'category') {
-                        $translatedResult['category'] = isset($result['category']) ? $this->loadCategoryData($result['category'], $lang) : null;
+                        $translatedResult['category'] = $this->loadCategoryData($result['id'], $lang);
                     } elseif ($item === 'tags') {
                         $translatedResult['tags'] = $this->loadTagsData($result['id'], $lang);
                     }

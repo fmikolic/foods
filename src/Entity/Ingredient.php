@@ -31,13 +31,32 @@ class Ingredient
     private $slug;
 
     /**
-     * @ORM\OneToMany(targetEntity="MealHasIngredient", mappedBy="ingredient")
+     * @ORM\ManyToMany(targetEntity="App\Entity\Meal", mappedBy="tags")
      */
-    private $mealHasIngredients;
+    private $meals;
 
     public function __construct()
     {
-        $this->mealHasIngredients = new ArrayCollection();
+        $this->meals = new ArrayCollection();
+    }
+
+    public function getMeals(): Collection
+    {
+        return $this->meals;
+    }
+
+    public function addMeal(Meal $meal): void
+    {
+        if (!$this->meals->contains($meal)) {
+            $this->meals[] = $meal;
+            $meal->addTag($this);
+        }
+    }
+
+    public function removeMeal(Meal $meal): void
+    {
+        $this->meals->removeElement($meal);
+        $meal->removeTag($this);
     }
 
     public function getId(): ?int
@@ -65,22 +84,4 @@ class Ingredient
         $this->slug = $slug;
     }
 
-    public function getMealHasIngredients(): Collection
-    {
-        return $this->mealHasIngredients;
-    }
-
-    public function addMealHasIngredient(MealHasIngredient $mealHasIngredient): void
-    {
-        if (!$this->mealHasIngredients->contains($mealHasIngredient)) {
-            $this->mealHasIngredients[] = $mealHasIngredient;
-            $mealHasIngredient->setIngredient($this);
-        }
-    }
-
-    public function removeMealHasIngredient(MealHasIngredient $mealHasIngredient): void
-    {
-        $this->mealHasIngredients->removeElement($mealHasIngredient);
-        $mealHasIngredient->setIngredient(null);
-    }
 }
