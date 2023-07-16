@@ -12,7 +12,7 @@ class MealHasIngredient
 {
     /**
      * @ORM\Id
-     * @ORM\ManyToOne(targetEntity="Meal")
+     * @ORM\ManyToOne(targetEntity="Meal", inversedBy="mealHasIngredients")
      * @ORM\JoinColumn(name="meal_id", referencedColumnName="id", nullable=false)
      */
     private $meal;
@@ -24,23 +24,23 @@ class MealHasIngredient
      */
     private $ingredient;
 
-    
+
     public function getMeal(): ?Meal
     {
         return $this->meal;
     }
-
-    public function setMeal(Meal $meal): void
+    
+    public function setMeal(?Meal $meal): void
     {
         $this->meal = $meal;
     }
-
+    
     public function getIngredient(): ?Ingredient
     {
         return $this->ingredient;
     }
-
-    public function setIngredient(Ingredient $ingredient): void
+    
+    public function setIngredient(?Ingredient $ingredient): void
     {
         $this->ingredient = $ingredient;
     }
