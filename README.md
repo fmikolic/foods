@@ -2,7 +2,7 @@
 
 Symfony 5 + FOSRestBundle + JSON Standard responses + working example
 
-![GitHub skeleton repo](https://github.com/demartis/symfony5-rest-api)
+GitHub skeleton repo is on this [link](https://github.com/demartis/symfony5-rest-api).
 
 
 Symfony 5 meals of world REST APIs, inclusive of:
