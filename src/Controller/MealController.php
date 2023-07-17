@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Meal;
+use App\Entity\MealHasTag;
 use App\Helper\MealHelper;
 use App\Validator\ParamsValidator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -55,10 +56,9 @@ class MealController extends AbstractController
         if ($category !== null) {
             if ($category === 'NULL') {
                 $queryBuilder->andWhere('m.category IS NULL');
-            } else if ($category === '!NULL'){
+            } else if ($category === '!NULL') {
                 $queryBuilder->andWhere('m.category IS NOT NULL');
-            }
-            else {
+            } else {
                 $queryBuilder->andWhere('c.id = :category')
                     ->setParameter('category', $category);
             }
@@ -66,21 +66,34 @@ class MealController extends AbstractController
 
         if ($tags) {
             $tagIds = explode(',', $tags);
-            $queryBuilder->andWhere(':tagIds MEMBER OF m.tags')
-                ->setParameter('tagIds', $tagIds);
+            $numTags = count($tagIds);
+
+            foreach ($tagIds as $index => $tagId) {
+                $alias = 't_' . $index;
+                $queryBuilder
+                    ->innerJoin('m.tags', $alias)
+                    ->andWhere($alias . '.id = :tagId' . $index)
+                    ->setParameter('tagId' . $index, $tagId);
+            }
+
+            $queryBuilder
+                ->groupBy('m.id')
+                ->having('COUNT(DISTINCT t.id) = :numTags')
+                ->setParameter('numTags', $numTags);
         }
 
         $queryBuilder->setMaxResults($perPage)
             ->setFirstResult(($page - 1) * $perPage);
 
         $results = $queryBuilder->getQuery()->getArrayResult();
-        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
 
         $totalItems = $this->mealHelper->countTotalItems($queryBuilder);
         $totalPages = ceil($totalItems / $perPage);
 
+        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
+
         $response = $this->mealHelper->buildResponse($page, $totalItems, $perPage, $totalPages, $translatedResults, $request);
-        
+
         return new JsonResponse($response);
     }
 }
