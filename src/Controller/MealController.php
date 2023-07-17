@@ -40,7 +40,7 @@ class MealController extends AbstractController
 
         $repository = $this->getDoctrine()->getRepository(Meal::class);
         $queryBuilder = $repository->createQueryBuilder('m')
-            ->select('DISTINCT m.id, m.title, m.description, m.status')
+            ->select('m')
             ->leftJoin('m.category', 'c')
             ->leftJoin('m.tags', 't')
             ->leftJoin('m.ingredients', 'i');
@@ -52,28 +52,48 @@ class MealController extends AbstractController
                 ->setParameter('diffTime', $diffTime);
         }
 
-        if ($category) {
-            $queryBuilder->andWhere('c.id = :category')
-                ->setParameter('category', $category);
+        if ($category !== null) {
+            if ($category === 'NULL') {
+                $queryBuilder->andWhere('m.category IS NULL');
+            } else if ($category === '!NULL') {
+                $queryBuilder->andWhere('m.category IS NOT NULL');
+            } else {
+                $queryBuilder->andWhere('c.id = :category')
+                    ->setParameter('category', $category);
+            }
         }
 
         if ($tags) {
             $tagIds = explode(',', $tags);
-            $queryBuilder->andWhere(':tagIds MEMBER OF m.tags')
-                ->setParameter('tagIds', $tagIds);
+            $numTags = count($tagIds);
+
+            foreach ($tagIds as $index => $tagId) {
+                $alias = 't_' . $index;
+                $queryBuilder
+                    ->innerJoin('m.tags', $alias)
+                    ->andWhere($alias . '.id = :tagId' . $index)
+                    ->setParameter('tagId' . $index, $tagId);
+            }
+
+            $queryBuilder
+                ->groupBy('m.id')
+                ->having($queryBuilder->expr()->eq('COUNT(t)', ':numTags'))
+                ->setParameter('numTags', $numTags);
         }
 
         $queryBuilder->setMaxResults($perPage)
             ->setFirstResult(($page - 1) * $perPage);
 
         $results = $queryBuilder->getQuery()->getArrayResult();
-        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
 
         $totalItems = $this->mealHelper->countTotalItems($queryBuilder);
+
         $totalPages = ceil($totalItems / $perPage);
 
+        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
+
         $response = $this->mealHelper->buildResponse($page, $totalItems, $perPage, $totalPages, $translatedResults, $request);
-        
+
         return new JsonResponse($response);
     }
 }

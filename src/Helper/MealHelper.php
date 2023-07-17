@@ -36,10 +36,15 @@ class MealHelper
 
     public function countTotalItems($queryBuilder): int
     {
-        $alias = $queryBuilder->getRootAliases()[0];
-        $queryBuilder->resetDQLPart('select')->select('COUNT(DISTINCT ' . $alias . '.id)');
+        $countQuery = $queryBuilder->getQuery();
 
-        return (int)$queryBuilder->getQuery()->getSingleScalarResult();
+        $countQuery->setHint(\Doctrine\ORM\Query::HINT_INCLUDE_META_COLUMNS, true);
+        $countQuery->setHint(\Doctrine\ORM\Query::HINT_FORCE_PARTIAL_LOAD, true);
+
+        $paginator = new \Doctrine\ORM\Tools\Pagination\Paginator($countQuery);
+        $totalItems = count($paginator);
+
+        return $totalItems;
     }
 
     public function generateUrl($request, $page): string
@@ -84,7 +89,7 @@ class MealHelper
     private function loadCategoryData(?int $mealId, string $lang): ?array
     {
         $meal = $this->mealRepository->find($mealId);
-        $categoryId = $meal ? $meal->getCategory(): null;
+        $categoryId = $meal ? $meal->getCategory() : null;
         if ($categoryId) {
             $category = $this->categoryRepository->find($categoryId);
 
@@ -147,6 +152,10 @@ class MealHelper
             $translatedResult = $result;
             $translatedResult['title'] = $this->translate($result['title'], $lang);
             $translatedResult['description'] = $this->translate($result['description'], $lang);
+            unset($translatedResult['created_at']);
+            unset($translatedResult['deleted_at']);
+            unset($translatedResult['updated_at']);
+
 
             if ($with) {
                 $withArray = explode(',', $with);
@@ -161,7 +170,6 @@ class MealHelper
                     }
                 }
             }
-
             $translatedResults[] = $translatedResult;
         }
 

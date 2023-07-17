@@ -31,7 +31,7 @@ class Ingredient
     private $slug;
 
     /**
-     * @ORM\ManyToMany(targetEntity="App\Entity\Meal", mappedBy="tags")
+     * @ORM\ManyToMany(targetEntity="App\Entity\Meal", mappedBy="ingredients")
      */
     private $meals;
 
@@ -49,14 +49,14 @@ class Ingredient
     {
         if (!$this->meals->contains($meal)) {
             $this->meals[] = $meal;
-            $meal->addTag($this);
+            $meal->addIngredient($this);
         }
     }
 
     public function removeMeal(Meal $meal): void
     {
         $this->meals->removeElement($meal);
-        $meal->removeTag($this);
+        $meal->removeIngredient($this);
     }
 
     public function getId(): ?int
