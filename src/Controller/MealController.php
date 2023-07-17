@@ -45,6 +45,28 @@ class MealController extends AbstractController
             ->leftJoin('m.tags', 't')
             ->leftJoin('m.ingredients', 'i');
 
+        $this->configureDiffTime($queryBuilder, $diffTime);
+        $this->configureCategory($queryBuilder, $category);
+        $this->configureTags($queryBuilder, $tags);
+
+        $queryBuilder->setMaxResults($perPage)
+            ->setFirstResult(($page - 1) * $perPage);
+
+        $results = $queryBuilder->getQuery()->getArrayResult();
+
+        $totalItems = $this->mealHelper->countTotalItems($queryBuilder);
+
+        $totalPages = ceil($totalItems / $perPage);
+
+        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
+
+        $response = $this->mealHelper->buildResponse($page, $totalItems, $perPage, $totalPages, $translatedResults, $request);
+
+        return new JsonResponse($response);
+    }
+
+    private function configureDiffTime($queryBuilder, ?int $diffTime): void
+    {
         if ($diffTime > 0) {
             $deletedAtTime = (new \DateTime())->setTimestamp($diffTime);
             $updatedAtTime = (new \DateTime())->setTimestamp($diffTime);
@@ -59,7 +81,10 @@ class MealController extends AbstractController
             $queryBuilder
             ->andWhere('m.deleted_at IS NULL');
         }
+    }
 
+    private function configureCategory($queryBuilder, ?string $category): void
+    {
         if ($category !== null) {
             if ($category === 'NULL') {
                 $queryBuilder->andWhere('m.category IS NULL');
@@ -70,7 +95,10 @@ class MealController extends AbstractController
                     ->setParameter('category', $category);
             }
         }
+    }
 
+    private function configureTags($queryBuilder, ?string $tags): void
+    {
         if ($tags) {
             $tagIds = explode(',', $tags);
             $numTags = count($tagIds);
@@ -88,20 +116,5 @@ class MealController extends AbstractController
                 ->having($queryBuilder->expr()->eq('COUNT(t)', ':numTags'))
                 ->setParameter('numTags', $numTags);
         }
-
-        $queryBuilder->setMaxResults($perPage)
-            ->setFirstResult(($page - 1) * $perPage);
-
-        $results = $queryBuilder->getQuery()->getArrayResult();
-
-        $totalItems = $this->mealHelper->countTotalItems($queryBuilder);
-
-        $totalPages = ceil($totalItems / $perPage);
-
-        $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
-
-        $response = $this->mealHelper->buildResponse($page, $totalItems, $perPage, $totalPages, $translatedResults, $request);
-
-        return new JsonResponse($response);
     }
 }
