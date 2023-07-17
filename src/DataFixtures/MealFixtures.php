@@ -42,7 +42,16 @@ class MealFixtures extends Fixture implements DependentFixtureInterface
                 $meal->setCategory($category);
             }
 
-            // Generate random number of tags (1-3)
+            if ($i % 4 === 0) {
+                $meal->setStatus("deleted");
+                $meal->setDeletedAt(new \DateTime());
+            } else if ($i % 5 === 0) {
+                $meal->setStatus("modified");
+                $meal->setUpdatedAt(new \DateTime());
+            } else {
+                $meal->setStatus("created");
+            }
+
             $numTags = mt_rand(1, 3);
             for ($j = 1; $j <= $numTags; $j++) {
                 $randId = mt_rand(1, 25);
@@ -54,7 +63,6 @@ class MealFixtures extends Fixture implements DependentFixtureInterface
                 $manager->persist($mealHasTag);
             }
 
-            // Generate random number of ingredients (1-3)
             $numIngredients = mt_rand(1, 3);
             for ($k = 1; $k <= $numIngredients; $k++) {
                 $randId = mt_rand(1, 20);
