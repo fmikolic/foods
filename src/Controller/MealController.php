@@ -46,10 +46,18 @@ class MealController extends AbstractController
             ->leftJoin('m.ingredients', 'i');
 
         if ($diffTime > 0) {
-            $queryBuilder->orWhere('m.created_at >= :diffTime')
-                ->orWhere('m.updated_at >= :diffTime')
-                ->orWhere('m.deleted_at >= :diffTime')
-                ->setParameter('diffTime', $diffTime);
+            $deletedAtTime = (new \DateTime())->setTimestamp($diffTime);
+            $updatedAtTime = (new \DateTime())->setTimestamp($diffTime);
+            $createdAtTime = (new \DateTime())->setTimestamp($diffTime);
+        
+            $queryBuilder
+                ->andWhere('m.deleted_at >= :deletedAtTime OR m.updated_at >= :updatedAtTime OR m.created_at >= :createdAtTime')
+                ->setParameter('deletedAtTime', $deletedAtTime, \Doctrine\DBAL\Types\DateTimeType::DATETIME)
+                ->setParameter('updatedAtTime', $updatedAtTime, \Doctrine\DBAL\Types\DateTimeType::DATETIME)
+                ->setParameter('createdAtTime', $createdAtTime, \Doctrine\DBAL\Types\DateTimeType::DATETIME);
+        }else{
+            $queryBuilder
+            ->andWhere('m.deleted_at IS NULL');
         }
 
         if ($category !== null) {

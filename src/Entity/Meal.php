@@ -5,10 +5,13 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+
 
 /**
  * @ORM\Entity
  * @ORM\Table(name="meal")
+ * @Gedmo\SoftDeleteable(fieldName="deleted_at", timeAware=false)
  */
 class Meal
 {
@@ -45,7 +48,7 @@ class Meal
     private $deleted_at;
 
     /**
-     * @ORM\Column(type="string", length=45, nullable=true)
+     * @ORM\Column(type="datetime", nullable=true)
      */
     private $updated_at;
 
@@ -142,12 +145,12 @@ class Meal
         $this->deleted_at = $deletedAt;
     }
 
-    public function getUpdatedAt(): ?string
+    public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updated_at;
     }
 
-    public function setUpdatedAt(string $updatedAt): void
+    public function setUpdatedAt(\DateTimeInterface $updatedAt): void
     {
         $this->updated_at = $updatedAt;
     }
