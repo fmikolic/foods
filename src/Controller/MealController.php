@@ -40,7 +40,7 @@ class MealController extends AbstractController
 
         $repository = $this->getDoctrine()->getRepository(Meal::class);
         $queryBuilder = $repository->createQueryBuilder('m')
-            ->select('m')
+            ->select('DISTINCT m')
             ->leftJoin('m.category', 'c')
             ->leftJoin('m.tags', 't')
             ->leftJoin('m.ingredients', 'i');
