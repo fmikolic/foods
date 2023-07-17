@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Meal;
-use App\Entity\MealHasTag;
 use App\Helper\MealHelper;
 use App\Validator\ParamsValidator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -41,7 +40,7 @@ class MealController extends AbstractController
 
         $repository = $this->getDoctrine()->getRepository(Meal::class);
         $queryBuilder = $repository->createQueryBuilder('m')
-            ->select('DISTINCT m.id, m.title, m.description, m.status')
+            ->select('m')
             ->leftJoin('m.category', 'c')
             ->leftJoin('m.tags', 't')
             ->leftJoin('m.ingredients', 'i');
@@ -78,7 +77,7 @@ class MealController extends AbstractController
 
             $queryBuilder
                 ->groupBy('m.id')
-                ->having('COUNT(DISTINCT t.id) = :numTags')
+                ->having($queryBuilder->expr()->eq('COUNT(t)', ':numTags'))
                 ->setParameter('numTags', $numTags);
         }
 
@@ -88,6 +87,7 @@ class MealController extends AbstractController
         $results = $queryBuilder->getQuery()->getArrayResult();
 
         $totalItems = $this->mealHelper->countTotalItems($queryBuilder);
+
         $totalPages = ceil($totalItems / $perPage);
 
         $translatedResults = $this->mealHelper->processResults($results, $lang, $with);
